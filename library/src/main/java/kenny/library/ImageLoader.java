@@ -2,7 +2,6 @@ package kenny.library;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.util.LruCache;
 import android.widget.ImageView;
 
 import java.net.HttpURLConnection;
@@ -22,44 +21,38 @@ public class ImageLoader {
     /**
      * A map for Caching bitmap that we have downloaded.
      */
-    private LruCache<String, Bitmap> mImageCache;
+    private ImageCache mImageCache = new ImageCache();
+
 
 
 
     private ExecutorService mExecutorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 
     public ImageLoader() {
-        initImageCache();
     }
 
-    private void initImageCache() {
-        final int maxMemory = (int) (Runtime.getRuntime().maxMemory() / 1024);
-
-        final int cacheSize = maxMemory / 4;
-
-        mImageCache = new LruCache<String, Bitmap>(cacheSize) {
-            @Override
-            protected int sizeOf(String key, Bitmap value) {
-                return value.getRowBytes() * value.getHeight() / 1024;
-            }
-        };
-    }
 
     public void displayImage(final String url, final ImageView imageView) {
-        imageView.setTag(url);
-        mExecutorService.submit(new Runnable() {
-            @Override
-            public void run() {
-                Bitmap bitmap = downloadImage(url);
-                if (bitmap == null) {
-                    return;
+        Bitmap bitmap = mImageCache.get(url);
+        if (bitmap != null) {
+            imageView.setImageBitmap(bitmap);
+        } else {
+            imageView.setTag(url);
+            mExecutorService.submit(new Runnable() {
+                @Override
+                public void run() {
+                    Bitmap bitmap = downloadImage(url);
+                    if (bitmap == null) {
+                        return;
+                    }
+                    if (imageView.getTag().equals(url)) {
+                        imageView.setImageBitmap(bitmap);
+                    }
+                    mImageCache.put(url, bitmap);
                 }
-                if (imageView.getTag().equals(url)) {
-                    imageView.setImageBitmap(bitmap);
-                }
-                mImageCache.put(url, bitmap);
-            }
-        });
+            });
+        }
+
     }
 
     private Bitmap downloadImage(String imageUrl) {
