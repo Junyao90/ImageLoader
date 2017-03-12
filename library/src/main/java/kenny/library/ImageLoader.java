@@ -11,7 +11,6 @@ import java.util.concurrent.Executors;
 
 
 /**
- *
  * @author Junyao
  * @package kenny.library
  */
@@ -19,12 +18,18 @@ import java.util.concurrent.Executors;
 public class ImageLoader {
 
     /**
-     * A map for Caching bitmap that we have downloaded.
+     * memory cache
      */
     private ImageCache mImageCache = new ImageCache();
 
 
+    /**
+     * sd card cache
+     */
+    private DiskCache mDiskCache = new DiskCache();
 
+
+    private boolean isUseDiskCache = false;
 
     private ExecutorService mExecutorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 
@@ -33,7 +38,8 @@ public class ImageLoader {
 
 
     public void displayImage(final String url, final ImageView imageView) {
-        Bitmap bitmap = mImageCache.get(url);
+
+        Bitmap bitmap = isUseDiskCache ? mDiskCache.get(url) : mImageCache.get(url);
         if (bitmap != null) {
             imageView.setImageBitmap(bitmap);
         } else {
@@ -53,6 +59,10 @@ public class ImageLoader {
             });
         }
 
+    }
+
+    public void useDiskCache(boolean useDiskCache) {
+        isUseDiskCache = useDiskCache;
     }
 
     private Bitmap downloadImage(String imageUrl) {
