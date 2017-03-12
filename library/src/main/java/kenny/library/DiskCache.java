@@ -12,13 +12,15 @@ import java.io.IOException;
  * @package kenny.library
  */
 
-public class DiskCache {
-    static String cacheDir = "sdcard/cache";
+public class DiskCache implements ImageCache {
+    static String cacheDir = "sdcard/cache/";
 
+    @Override
     public Bitmap get(String url) {
         return BitmapFactory.decodeFile(cacheDir + url);
     }
 
+    @Override
     public void put(String url, Bitmap bitmap) {
         FileOutputStream fileOutputStream = null;
         try {

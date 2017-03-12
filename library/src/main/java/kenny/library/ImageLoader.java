@@ -18,69 +18,47 @@ import java.util.concurrent.Executors;
 public class ImageLoader {
 
     /**
-     * memory cache
+     * Image cache
      */
-    private ImageCache mImageCache = new ImageCache();
+    private ImageCache mImageCache = new MemoryCache();
 
-
-    /**
-     * sd card cache
-     */
-    private DiskCache mDiskCache = new DiskCache();
-
-    /**
-     * both memory cache and sd card cache
-     */
-    private DoubleCache mDoubleCache = new DoubleCache();
-
-
-    private boolean isUseDiskCache = false;
-    private boolean isUseDoubleCache = false;
 
     private ExecutorService mExecutorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 
-    public ImageLoader() {
-    }
 
+    public void setImageCache(ImageCache cache) {
+        mImageCache = cache;
+    }
 
     public void displayImage(final String url, final ImageView imageView) {
 
-        Bitmap bitmap;
-        if (isUseDoubleCache) {
-            bitmap = mDoubleCache.get(url);
-        } else if (isUseDiskCache) {
-            bitmap = mDiskCache.get(url);
-        } else {
-            bitmap = mImageCache.get(url);
-        }
+
+        Bitmap bitmap = mImageCache.get(url);
         if (bitmap != null) {
             imageView.setImageBitmap(bitmap);
         } else {
-            imageView.setTag(url);
-            mExecutorService.submit(new Runnable() {
-                @Override
-                public void run() {
-                    Bitmap bitmap = downloadImage(url);
-                    if (bitmap == null) {
-                        return;
-                    }
-                    if (imageView.getTag().equals(url)) {
-                        imageView.setImageBitmap(bitmap);
-                    }
-                    mImageCache.put(url, bitmap);
-                }
-            });
+            submitLoadRequest(url, imageView);
         }
 
     }
 
-    public void useDiskCache(boolean useDiskCache) {
-        isUseDiskCache = useDiskCache;
+    private void submitLoadRequest(final String url, final ImageView imageView) {
+        imageView.setTag(url);
+        mExecutorService.submit(new Runnable() {
+            @Override
+            public void run() {
+                Bitmap bitmap = downloadImage(url);
+                if (bitmap == null) {
+                    return;
+                }
+                if (imageView.getTag().equals(url)) {
+                    imageView.setImageBitmap(bitmap);
+                }
+                mImageCache.put(url, bitmap);
+            }
+        });
     }
 
-    public void useDoubleCache(boolean useDoubleCache) {
-        isUseDoubleCache = useDoubleCache;
-    }
 
     private Bitmap downloadImage(String imageUrl) {
         Bitmap bitmap = null;
