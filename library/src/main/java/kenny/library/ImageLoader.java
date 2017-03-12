@@ -28,8 +28,14 @@ public class ImageLoader {
      */
     private DiskCache mDiskCache = new DiskCache();
 
+    /**
+     * both memory cache and sd card cache
+     */
+    private DoubleCache mDoubleCache = new DoubleCache();
+
 
     private boolean isUseDiskCache = false;
+    private boolean isUseDoubleCache = false;
 
     private ExecutorService mExecutorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 
@@ -39,7 +45,14 @@ public class ImageLoader {
 
     public void displayImage(final String url, final ImageView imageView) {
 
-        Bitmap bitmap = isUseDiskCache ? mDiskCache.get(url) : mImageCache.get(url);
+        Bitmap bitmap;
+        if (isUseDoubleCache) {
+            bitmap = mDoubleCache.get(url);
+        } else if (isUseDiskCache) {
+            bitmap = mDiskCache.get(url);
+        } else {
+            bitmap = mImageCache.get(url);
+        }
         if (bitmap != null) {
             imageView.setImageBitmap(bitmap);
         } else {
@@ -63,6 +76,10 @@ public class ImageLoader {
 
     public void useDiskCache(boolean useDiskCache) {
         isUseDiskCache = useDiskCache;
+    }
+
+    public void useDoubleCache(boolean useDoubleCache) {
+        isUseDoubleCache = useDoubleCache;
     }
 
     private Bitmap downloadImage(String imageUrl) {
